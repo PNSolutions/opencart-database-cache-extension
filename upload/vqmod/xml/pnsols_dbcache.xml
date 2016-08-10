@@ -16,8 +16,26 @@
 		<operation>
 		<search position="after" offset="1"><![CDATA[echo $output;]]></search>
 		<add><![CDATA[
-		$dbCache = DbCache::getInstance();
-$dbCache->saveCacheToFile();
+            if (Registry::getInstance()->get('config')->get('db_cache_status')) { 
+                if (DbCache::isCreated() && DbCache::getInstance()->isChanged()) DbCache::getInstance()->saveCacheToFile();
+            }
+		]]></add>
+		</operation>
+	</file>
+    
+    <file name="system/engine/registry.php">
+		<operation>
+		<search position="after" offset="1"><![CDATA[final class Registry {]]></search>
+		<add><![CDATA[
+		private static $instance;
+
+            public static function getInstance() {
+                return self::$instance;
+            }
+
+            public function __construct() {
+                self::$instance = $this;
+            }
 		]]></add>
 		</operation>
 	</file>
@@ -26,6 +44,9 @@ $dbCache->saveCacheToFile();
 		<operation>
 		<search position="replace"><![CDATA[return $this->driver->query($sql);]]></search>
            <add><![CDATA[
+               if (!Registry::getInstance()->get('config')->get('db_cache_status')) 
+                return $this->queryNonCache($sql);
+
                return DbCache::processDbQuery($this, $sql);
                }
 
@@ -34,4 +55,11 @@ $dbCache->saveCacheToFile();
            ]]></add>
 		</operation>
 	</file>
+
+    <file name="admin/view/template/common/header.tpl">
+        <operation>
+            <search position="after"><![CDATA[<li><a href="<?php echo $backup; ?>"><?php echo $text_backup; ?></a></li>]]></search>
+            <add><![CDATA[<li><a href="<?php echo $this->url->link('module/db_cache/clear', 'token=' . $this->session->data['token'].'&redirectRoute='.$_GET['route'], 'SSL'); ?>">Clear DB Cache</a></li>]]></add>
+        </operation>
+    </file>
 </modification>
