@@ -47,7 +47,10 @@
                if (!Registry::getInstance()->get('config')->get('db_cache_status')) 
                 return $this->queryNonCache($sql);
 
-               return DbCache::processDbQuery($this, $sql);
+               if (!stripos($_SERVER['REQUEST_URI'], '/admin')) {
+                return DbCache::processDbQuery($this, $sql);
+               }
+               return $this->queryNonCache($sql);
                }
 
            public function queryNonCache($sql) {
