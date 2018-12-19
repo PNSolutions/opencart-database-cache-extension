@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+    <name>DB Cache</name>
+	<code>PNSols_DBCache_Extension_Modification</code>
+    <version>2.0</version>
+    <author>PN Solutions</author>
+	<link>http://pnsols.com</link>
+	
+    <file path="system/library/response.php">
+		<operation>
+		<search><![CDATA[echo $output;]]></search>
+		<add position="after" offset="1"><![CDATA[
+                if (DbCache::isCreated() && DbCache::getInstance()->isChanged()) DbCache::getInstance()->saveCacheToFile();
+		]]></add>
+		</operation>
+	</file>
+	
+    <file path="system/library/db.php">
+		<operation>
+			<search><![CDATA[class DB {]]></search>
+			<add position="before" offset="0"><![CDATA[require_once(DIR_SYSTEM . 'library/pnsols/db_cache.php');]]></add>
+		</operation>
+		<operation>
+		<search><![CDATA[return $this->adaptor->query($sql, $params);]]></search>
+	   <add position="replace"><![CDATA[
+               
+              return DbCache::processDbQuery($this, $sql, $params);
+           }
+
+           public function queryNonCache($sql, $params = array()) {
+               return $this->adaptor->query($sql, $params);
+           ]]></add>
+		</operation>
+	</file>
+</modification>

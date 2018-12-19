@@ -29,6 +29,14 @@ class DbCache {
         return static::$instance !== NULL;
     }
 
+    private static function getCacheTimeout() {
+        $cacheTimeoutSeconds = (int)Registry::getInstance()->get('config')->get('db_cache_cacheTimeoutSeconds');
+        if (!$cacheTimeoutSeconds) {
+            $cacheTimeoutSeconds = self::DEFAULT_CACHE_TIMEOUT_SECONDS;
+        }
+        return $cacheTimeoutSeconds;
+    }
+
     private $cacheChanged = FALSE;
 
     public function isChanged() {
@@ -142,7 +150,7 @@ class DbCache {
 			$nowTime = date_create();
 			$secondsDiffSpan = date_diff($cacheTime, $nowTime);
             $daysDiffCount = $secondsDiffSpan->format('%a');
-			if ($daysDiffCount >= self::DEFAULT_CACHE_TIMEOUT_SECONDS) {
+			if ($daysDiffCount >= self::getCacheTimeout()) {
                 $this->removeCacheEntry($queryText);
 				return null;
 			}
@@ -180,7 +188,7 @@ class DbCache {
         
 		$secondsDiffSpan = date_diff($timeModified, $nowTime);
         $daysDiffCount = $secondsDiffSpan->format('%a');
-		if ($daysDiffCount >= self::DEFAULT_CACHE_TIMEOUT_SECONDS) {
+		if ($daysDiffCount >= self::getCacheTimeout()) {
             $this->removeCacheEntry($cacheKey);
 			return NULL;
 		}
@@ -231,13 +239,23 @@ class DbCache {
 	
 	public static function processDbQuery($db, $sql) {
 		$dbCache = DbCache::getInstance();
+        if (stripos($sql, 'now()')) {
+            $c = 0;
+            $sql = str_ireplace('NOW()', '\''.date('Y-m-d H:i').':00\'', $sql, $c);
+        }
         if (DbCache::isModificationQuery($sql)) {
             $dbCache->processModificationQuery($sql);
         } else {
-            $cachedFetch = $dbCache->getCachedSelectFetch($sql);
-            if ($cachedFetch != null) {
-                //echo 'cached select query: '.$sql;
-                return $cachedFetch;
+            if (!Registry::getInstance()->get('config')->get('db_cache_status')) 
+                return $db->queryNonCache($sql);
+            if (!stripos($_SERVER['REQUEST_URI'], '/admin')) {    
+                $cachedFetch = $dbCache->getCachedSelectFetch($sql);
+                if ($cachedFetch != null) {
+                    //echo 'cached select query: '.$sql;
+                    return $cachedFetch;
+                }
+            } else {
+                return $db->queryNonCache($sql);
             }
         }
 

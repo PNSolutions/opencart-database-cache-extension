@@ -3,8 +3,7 @@ opencart module
 version 1.16.12.14
 ———————
 
-VQMOD required for 1.5.6.x
-2.0.x doesn't require VQMOD - there is ocmod
+VQMOD required
 
 Caches db sql queries to improve perfomance up to 10 times.
 Automatically drop affected cache entries after any modification operation: insert/update/delete

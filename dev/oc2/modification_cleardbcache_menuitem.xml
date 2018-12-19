@@ -1,0 +1,11 @@
+
+    <file path="admin/view/template/common/column_left.tpl">
+        <operation>
+            <search><![CDATA[<?php foreach ($children_1['children'] as $children_2) { ?>]]></search>
+            <add position="after"><![CDATA[
+			<?php if (strpos($children_2['href'], 'tool/upload')) { ?>
+<li><a href="<?php echo str_replace('tool/upload','module/db_cache/clear',$children_2['href']); ?>">Clear DB Cache</a></li>
+<?php } ?>
+			]]></add>
+        </operation>
+    </file>

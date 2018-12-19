@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+    <id>DB Cache for OC</id>
+    <version>1.5.x and above</version>
+    <vqmver required="true">2.3.0</vqmver>
+    <author>PN Solutions</author>
+
+    <file name="system/startup.php">
+		<operation>
+		<search position="before" offset="0"><![CDATA[require_once(DIR_SYSTEM . 'library/db.php');]]></search>
+		<add><![CDATA[require_once(DIR_SYSTEM . 'library/pnsols/db_cache.php');]]></add>
+		</operation>
+	</file>
+	
+    <file name="system/library/response.php">
+		<operation>
+		<search position="after" offset="1"><![CDATA[echo $output;]]></search>
+		<add><![CDATA[
+            //if (Registry::getInstance()->get('config')->get('db_cache_status')) { 
+                if (DbCache::isCreated() && DbCache::getInstance()->isChanged()) DbCache::getInstance()->saveCacheToFile();
+            //}
+		]]></add>
+		</operation>
+	</file>
+    
+    <file name="system/engine/registry.php">
+		<operation>
+		<search position="after" offset="1"><![CDATA[final class Registry {]]></search>
+		<add><![CDATA[
+		private static $instance;
+
+            public static function getInstance() {
+                return self::$instance;
+            }
+
+            public function __construct() {
+                self::$instance = $this;
+            }
+		]]></add>
+		</operation>
+	</file>
+	
+    <file name="system/library/db.php">
+		<operation>
+		<search position="replace"><![CDATA[return $this->driver->query($sql);]]></search>
+           <add><![CDATA[
+               
+                return DbCache::processDbQuery($this, $sql);
+               }
+
+           public function queryNonCache($sql) {
+        return $this->driver->query($sql);
+           ]]></add>
+		</operation>
+	</file>
+
+    <file name="admin/view/template/common/header.tpl">
+        <operation>
+            <search position="after"><![CDATA[<li><a href="<?php echo $backup; ?>"><?php echo $text_backup; ?></a></li>]]></search>
+            <add><![CDATA[<li><a href="<?php echo $this->url->link('module/db_cache/clear', 'token=' . $this->session->data['token'].'&redirectRoute='.$_GET['route'], 'SSL'); ?>">Clear DB Cache</a></li>]]></add>
+        </operation>
+    </file>
+</modification>
